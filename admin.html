@@ -1,20 +1,19 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 
 <head>
 
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
-    <title>NatureQuest Admin</title>
+    <title>🔐 NatureQuest Admin</title>
 
-    <link rel="stylesheet"
-          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-
-    <link rel="stylesheet"
-          href="style.css">
+    <link
+        rel="stylesheet"
+        href="style.css">
 
 </head>
 
@@ -22,167 +21,383 @@
 
 <header>
 
-    <h1>🔐 NatureQuest Admin</h1>
+    <h1>
+        🔐 NatureQuest Admin
+    </h1>
 
     <a href="index.html">
-        🎮 Joueur
+        🎮 Retour au jeu
     </a>
 
 </header>
 
+
 <main>
 
-<section id="loginAdmin"
-         class="card">
+<section class="card">
 
-    <h2>Connexion administrateur</h2>
+    <h2>
+        ➕ Créer une quête
+    </h2>
 
-    <input id="ae"
-           type="email"
-           placeholder="E-mail">
 
-    <input id="ap"
-           type="password"
-           placeholder="Mot de passe">
+    <input
+        id="id"
+        placeholder="ID : parc004">
 
-    <button id="adminLogin">
-        Connexion
+
+    <input
+        id="qr"
+        placeholder="QR : NATURE-004">
+
+
+    <input
+        id="name"
+        placeholder="Nom de la quête">
+
+
+    <textarea
+        id="description"
+        placeholder="Description">
+    </textarea>
+
+
+    <textarea
+        id="question"
+        placeholder="Question">
+    </textarea>
+
+
+    <select id="type">
+
+        <option value="creative">
+            Réponse libre
+        </option>
+
+        <option value="text">
+            Réponse exacte
+        </option>
+
+        <option value="choice">
+            Choix multiple
+        </option>
+
+    </select>
+
+
+    <input
+        id="answer"
+        placeholder="Réponse correcte">
+
+
+    <textarea
+        id="options"
+        placeholder="Choix multiples : un choix par ligne">
+    </textarea>
+
+
+    <input
+        id="points"
+        type="number"
+        value="10"
+        placeholder="Points">
+
+
+    <input
+        id="latitude"
+        placeholder="Latitude">
+
+
+    <input
+        id="longitude"
+        placeholder="Longitude">
+
+
+    <input
+        id="next"
+        placeholder="ID de la prochaine quête">
+
+
+    <label>
+
+        <input
+            id="active"
+            type="checkbox"
+            checked>
+
+        Quête active
+
+    </label>
+
+
+    <br>
+
+
+    <button onclick="generateQuest()">
+
+        🧩 Générer le code
+
     </button>
-
-    <p id="am"></p>
 
 </section>
 
-
-<div id="admin"
-     class="hidden">
-
-
-<!-- CREATION QUETE -->
 
 <section class="card">
 
-    <h2>➕ Créer une quête</h2>
-
-    <div class="cols">
-
-        <div>
-
-            <input id="name"
-                   placeholder="Nom de la quête">
-
-            <textarea id="desc"
-                      placeholder="Description"></textarea>
-
-            <select id="type">
-
-                <option value="creative">
-                    💡 Réponse libre
-                </option>
-
-                <option value="text">
-                    ✍️ Réponse exacte
-                </option>
-
-                <option value="choice">
-                    🔘 Choix multiple
-                </option>
-
-            </select>
-
-            <textarea id="question"
-                      placeholder="Question"></textarea>
-
-            <textarea id="options"
-                      placeholder="Choix, un par ligne"></textarea>
-
-            <input id="correct"
-                   placeholder="Réponse correcte">
-
-            <input id="points"
-                   type="number"
-                   value="10">
-
-            <input id="qr"
-                   placeholder="QR-PARC-001">
-
-        </div>
+    <h2>
+        📋 Code à copier
+    </h2>
 
 
-        <div>
+    <textarea
+        id="output"
+        readonly>
+    </textarea>
 
-            <p>
-                Clique sur la carte pour placer
-                le point GPS.
-            </p>
 
-            <button id="gps">
-                📍 Utiliser ma position
-            </button>
+    <button onclick="copyCode()">
 
-            <div id="adminMap"></div>
+        📋 Copier
 
-            <input id="lat"
-                   placeholder="Latitude">
-
-            <input id="lng"
-                   placeholder="Longitude">
-
-        </div>
-
-    </div>
-
-    <button id="create">
-        💾 Publier la quête
     </button>
-
-    <p id="cm"></p>
 
 </section>
 
-
-<!-- QR -->
 
 <section class="card">
 
-    <h2>🔲 Générer un QR code</h2>
+    <h2>
+        🔲 Générer un QR code
+    </h2>
 
-    <input id="qrValue"
-           placeholder="QR-PARC-001">
 
-    <button id="genQr">
-        Générer
+    <input
+        id="qrGenerator"
+        placeholder="NATURE-004">
+
+
+    <button onclick="generateQR()">
+
+        Générer QR
+
     </button>
 
-    <div id="qrOut"></div>
+
+    <div id="qrResult"></div>
 
 </section>
-
-
-<!-- LISTE -->
-
-<section class="card">
-
-    <h2>📋 Quêtes</h2>
-
-    <div id="list"></div>
-
-</section>
-
-</div>
 
 </main>
 
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
+</script>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-<script src="config.js"></script>
-<script src="common.js"></script>
 <script src="admin.js"></script>
 
 </body>
+
+</html><!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>🔐 NatureQuest Admin</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+    <h1>
+        🔐 NatureQuest Admin
+    </h1>
+
+    <a href="index.html">
+        🎮 Retour au jeu
+    </a>
+
+</header>
+
+
+<main>
+
+<section class="card">
+
+    <h2>
+        ➕ Créer une quête
+    </h2>
+
+
+    <input
+        id="id"
+        placeholder="ID : parc004">
+
+
+    <input
+        id="qr"
+        placeholder="QR : NATURE-004">
+
+
+    <input
+        id="name"
+        placeholder="Nom de la quête">
+
+
+    <textarea
+        id="description"
+        placeholder="Description">
+    </textarea>
+
+
+    <textarea
+        id="question"
+        placeholder="Question">
+    </textarea>
+
+
+    <select id="type">
+
+        <option value="creative">
+            Réponse libre
+        </option>
+
+        <option value="text">
+            Réponse exacte
+        </option>
+
+        <option value="choice">
+            Choix multiple
+        </option>
+
+    </select>
+
+
+    <input
+        id="answer"
+        placeholder="Réponse correcte">
+
+
+    <textarea
+        id="options"
+        placeholder="Choix multiples : un choix par ligne">
+    </textarea>
+
+
+    <input
+        id="points"
+        type="number"
+        value="10"
+        placeholder="Points">
+
+
+    <input
+        id="latitude"
+        placeholder="Latitude">
+
+
+    <input
+        id="longitude"
+        placeholder="Longitude">
+
+
+    <input
+        id="next"
+        placeholder="ID de la prochaine quête">
+
+
+    <label>
+
+        <input
+            id="active"
+            type="checkbox"
+            checked>
+
+        Quête active
+
+    </label>
+
+
+    <br>
+
+
+    <button onclick="generateQuest()">
+
+        🧩 Générer le code
+
+    </button>
+
+</section>
+
+
+<section class="card">
+
+    <h2>
+        📋 Code à copier
+    </h2>
+
+
+    <textarea
+        id="output"
+        readonly>
+    </textarea>
+
+
+    <button onclick="copyCode()">
+
+        📋 Copier
+
+    </button>
+
+</section>
+
+
+<section class="card">
+
+    <h2>
+        🔲 Générer un QR code
+    </h2>
+
+
+    <input
+        id="qrGenerator"
+        placeholder="NATURE-004">
+
+
+    <button onclick="generateQR()">
+
+        Générer QR
+
+    </button>
+
+
+    <div id="qrResult"></div>
+
+</section>
+
+</main>
+
+
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
+</script>
+
+
+<script src="admin.js"></script>
+
+</body>
+
 </html>
