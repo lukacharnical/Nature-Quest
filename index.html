@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>NatureQuest</title>
+
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+    <h1>🌿 NatureQuest</h1>
+    <a href="admin.html">🔐 Admin</a>
+</header>
+
+<main>
+
+    <!-- COMPTE -->
+    <section id="auth" class="card">
+
+        <h2>👤 Mon compte</h2>
+
+        <div class="cols">
+
+            <div>
+                <h3>Créer un compte</h3>
+
+                <input id="suName"
+                       placeholder="Pseudo">
+
+                <input id="suEmail"
+                       type="email"
+                       placeholder="E-mail">
+
+                <input id="suPass"
+                       type="password"
+                       placeholder="Mot de passe">
+
+                <button id="signup">
+                    Créer mon compte
+                </button>
+            </div>
+
+            <div>
+                <h3>Connexion</h3>
+
+                <input id="liEmail"
+                       type="email"
+                       placeholder="E-mail">
+
+                <input id="liPass"
+                       type="password"
+                       placeholder="Mot de passe">
+
+                <button id="login">
+                    Connexion
+                </button>
+            </div>
+
+        </div>
+
+        <p id="msg"></p>
+
+    </section>
+
+
+    <!-- PROFIL -->
+    <section id="profile"
+             class="card hidden">
+
+        <h2 id="name"></h2>
+
+        <p>
+            🏆
+            <b id="points">0</b>
+            points
+        </p>
+
+        <button id="logout">
+            Déconnexion
+        </button>
+
+    </section>
+
+
+    <!-- CARTE -->
+    <section class="card">
+
+        <h2>🗺️ Carte des quêtes</h2>
+
+        <div id="map"></div>
+
+        <button id="scan">
+            📷 Scanner un QR code
+        </button>
+
+        <div id="quests"></div>
+
+    </section>
+
+
+    <!-- SCANNER -->
+    <section id="scanner"
+             class="card hidden">
+
+        <h2>📷 Scanner un QR code</h2>
+
+        <div id="reader"></div>
+
+        <button id="closeScan">
+            Fermer
+        </button>
+
+    </section>
+
+
+    <!-- QUESTION -->
+    <section id="quest"
+             class="card hidden">
+
+        <h2 id="qName"></h2>
+
+        <p id="qDesc"></p>
+
+        <h3 id="qQuestion"></h3>
+
+        <div id="answer"></div>
+
+        <button id="validate">
+            ✅ Valider ma réponse
+        </button>
+
+        <p id="result"></p>
+
+    </section>
+
+</main>
+
+<footer>
+    NatureQuest 🌳
+</footer>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
