@@ -1,404 +1,265 @@
-let amap;
+function generateQuest() {
 
-let marker;
+    const id =
+        document.getElementById(
+            "id"
+        ).value.trim();
 
-let admin = null;
 
-let quests = [];
+    const qr =
+        document.getElementById(
+            "qr"
+        ).value.trim();
 
 
-// ------------------------------
-// DÉMARRAGE ADMIN
-// ------------------------------
+    const name =
+        document.getElementById(
+            "name"
+        ).value.trim();
 
-async function boot() {
 
-    const {
-        data: {
-            user
-        }
-    } =
-        await db.auth.getUser();
+    const description =
+        document.getElementById(
+            "description"
+        ).value.trim();
 
 
-    if (!user)
-        return false;
+    const question =
+        document.getElementById(
+            "question"
+        ).value.trim();
 
-
-    const {
-        data
-    } =
-        await db
-            .from("profiles")
-            .select(
-                "role,username"
-            )
-            .eq(
-                "id",
-                user.id
-            )
-            .single();
-
-
-    if (
-        data?.role !==
-        "admin"
-    ) {
-
-        return false;
-
-    }
-
-
-    admin = user;
-
-
-    $("loginAdmin")
-        .classList
-        .add("hidden");
-
-
-    $("admin")
-        .classList
-        .remove("hidden");
-
-
-    amap =
-        L.map(
-            "adminMap"
-        )
-        .setView(
-            [46.6, 1.88],
-            6
-        );
-
-
-    L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-            attribution:
-                "© OpenStreetMap contributors"
-        }
-    ).addTo(amap);
-
-
-    amap.on(
-        "click",
-        event => {
-
-            setPosition(
-                event.latlng.lat,
-                event.latlng.lng
-            );
-
-        }
-    );
-
-
-    await listQuests();
-
-    return true;
-
-}
-
-
-// ------------------------------
-// POSITION
-// ------------------------------
-
-function setPosition(
-    latitude,
-    longitude
-) {
-
-    $("lat").value =
-        latitude;
-
-    $("lng").value =
-        longitude;
-
-
-    if (marker) {
-
-        amap.removeLayer(
-            marker
-        );
-
-    }
-
-
-    marker =
-        L.marker([
-            latitude,
-            longitude
-        ])
-        .addTo(amap);
-
-}
-
-
-// ------------------------------
-// CONNEXION ADMIN
-// ------------------------------
-
-$("adminLogin").onclick =
-async () => {
-
-    const {
-        error
-    } =
-        await db.auth
-            .signInWithPassword({
-
-                email:
-                    $("ae")
-                        .value
-                        .trim(),
-
-                password:
-                    $("ap")
-                        .value
-
-            });
-
-
-    if (error) {
-
-        msg(
-            "am",
-            error.message,
-            "err"
-        );
-
-        return;
-    }
-
-
-    const success =
-        await boot();
-
-
-    if (!success) {
-
-        await db.auth.signOut();
-
-        msg(
-            "am",
-            "⛔ Ce compte n'est pas administrateur.",
-            "err"
-        );
-
-    }
-
-};
-
-
-// ------------------------------
-// GPS
-// ------------------------------
-
-$("gps").onclick =
-() => {
-
-    if (!navigator.geolocation) {
-
-        alert(
-            "La géolocalisation n'est pas disponible."
-        );
-
-        return;
-
-    }
-
-
-    navigator.geolocation.getCurrentPosition(
-
-        position => {
-
-            setPosition(
-
-                position.coords.latitude,
-
-                position.coords.longitude
-
-            );
-
-        },
-
-        () => {
-
-            alert(
-                "Impossible de récupérer ta position."
-            );
-
-        }
-
-    );
-
-};
-
-
-// ------------------------------
-// CRÉER UNE QUÊTE
-// ------------------------------
-
-$("create").onclick =
-async () => {
 
     const type =
-        $("type").value;
+        document.getElementById(
+            "type"
+        ).value;
+
+
+    const answer =
+        document.getElementById(
+            "answer"
+        ).value.trim();
+
+
+    const points =
+        Number(
+            document.getElementById(
+                "points"
+            ).value
+        ) || 10;
+
+
+    const latitude =
+        Number(
+            document.getElementById(
+                "latitude"
+            ).value
+        );
+
+
+    const longitude =
+        Number(
+            document.getElementById(
+                "longitude"
+            ).value
+        );
+
+
+    const next =
+        document.getElementById(
+            "next"
+        ).value.trim();
+
+
+    const active =
+        document.getElementById(
+            "active"
+        ).checked;
 
 
     const options =
-        $("options")
-            .value
-            .split("\n")
-            .map(
-                x => x.trim()
-            )
-            .filter(Boolean);
+        document.getElementById(
+            "options"
+        )
+
+        .value
+
+        .split("\n")
+
+        .map(
+            x => x.trim()
+        )
+
+        .filter(Boolean);
 
 
-    const row = {
+    if (
+        !id ||
+        !qr ||
+        !name ||
+        !question
+    ) {
 
-        name:
-            $("name")
-                .value
-                .trim(),
+        alert(
+            "❌ Remplis au minimum l'ID, le QR, le nom et la question."
+        );
 
-        description:
-            $("desc")
-                .value
-                .trim(),
+        return;
 
-        question_type:
-            type,
+    }
 
-        question:
-            $("question")
-                .value
-                .trim(),
 
-        options:
+    const quest = {
 
-            options,
+        id,
 
-        correct_answer:
-            $("correct")
-                .value
-                .trim(),
+        qr,
 
-        points:
-            Number(
-                $("points")
-                    .value
-            ) || 10,
+        name,
 
-        qr_code:
-            $("qr")
-                .value
-                .trim(),
+        description,
 
-        latitude:
-            Number(
-                $("lat")
-                    .value
-            ),
+        question,
 
-        longitude:
-            Number(
-                $("lng")
-                    .value
-            ),
+        type,
 
-        active:
-            true,
+        answer,
 
-        created_by:
-            admin.id
+        points,
+
+        latitude,
+
+        longitude,
+
+        next:
+            next || null,
+
+        active
 
     };
 
 
-    if (
+    const code = `
 
-        !row.name ||
+    {
+        id: "${escapeJS(quest.id)}",
 
-        !row.question ||
+        qr: "${escapeJS(quest.qr)}",
 
-        !row.qr_code ||
+        name: "${escapeJS(quest.name)}",
 
-        !Number.isFinite(
-            row.latitude
-        ) ||
+        description:
+            "${escapeJS(quest.description)}",
 
-        !Number.isFinite(
-            row.longitude
+        question:
+            "${escapeJS(quest.question)}",
+
+        type:
+            "${escapeJS(quest.type)}",
+
+        answer:
+            "${escapeJS(quest.answer)}",
+
+        points:
+            ${quest.points},
+
+        latitude:
+            ${quest.latitude},
+
+        longitude:
+            ${quest.longitude},
+
+        next:
+            ${quest.next
+                ? `"${escapeJS(quest.next)}"`
+                : "null"},
+
+        active:
+            ${quest.active}
+
+    },
+
+`;
+
+
+    document.getElementById(
+        "output"
+    ).value =
+        code;
+
+}
+
+
+function escapeJS(
+    value
+) {
+
+    return String(value)
+        .replace(
+            /\\/g,
+            "\\\\"
         )
 
-    ) {
+        .replace(
+            /"/g,
+            '\\"'
+        )
 
-        msg(
-            "cm",
-            "❌ Certains champs sont manquants.",
-            "err"
+        .replace(
+            /\n/g,
+            "\\n"
         );
 
-        return;
-
-    }
+}
 
 
-    const {
-        error
-    } =
-        await db
-            .from("quests")
-            .insert(row);
+function copyCode() {
 
-
-    if (error) {
-
-        msg(
-            "cm",
-            error.message,
-            "err"
+    const output =
+        document.getElementById(
+            "output"
         );
 
-        return;
 
-    }
+    output.select();
 
-
-    msg(
-        "cm",
-        "✅ Quête publiée !",
-        "ok"
+    output.setSelectionRange(
+        0,
+        99999
     );
 
 
-    await listQuests();
+    navigator.clipboard
+        .writeText(
+            output.value
+        )
 
-};
+        .then(
+            () => {
+
+                alert(
+                    "✅ Code copié !"
+                );
+
+            }
+        );
+
+}
 
 
-// ------------------------------
-// GÉNÉRATEUR QR
-// ------------------------------
-
-$("genQr").onclick =
-() => {
+function generateQR() {
 
     const value =
-        $("qrValue")
-            .value
-            .trim();
+        document.getElementById(
+            "qrGenerator"
+        ).value.trim();
 
 
     if (!value) {
 
         alert(
-            "Entre un identifiant QR."
+            "Entre un code QR."
         );
 
         return;
@@ -406,12 +267,17 @@ $("genQr").onclick =
     }
 
 
-    $("qrOut")
-        .innerHTML = "";
+    const result =
+        document.getElementById(
+            "qrResult"
+        );
+
+
+    result.innerHTML = "";
 
 
     new QRCode(
-        $("qrOut"),
+        result,
         {
 
             text:
@@ -429,203 +295,4 @@ $("genQr").onclick =
         }
     );
 
-};
-
-
-// ------------------------------
-// LISTE DES QUÊTES
-// ------------------------------
-
-async function listQuests() {
-
-    const {
-        data,
-        error
-    } =
-        await db
-            .from("quests")
-            .select("*")
-            .order(
-                "created_at",
-                {
-                    ascending:
-                        false
-                }
-            );
-
-
-    if (error) {
-
-        msg(
-            "cm",
-            error.message,
-            "err"
-        );
-
-        return;
-
-    }
-
-
-    quests =
-        data || [];
-
-
-    $("list").innerHTML =
-        quests
-            .map(q => `
-
-                <div class="quest">
-
-                    <b>
-                        ${esc(q.name)}
-                    </b>
-
-                    —
-
-                    ${q.points}
-                    points
-
-                    <br>
-
-                    🔲
-                    ${esc(q.qr_code)}
-
-                    <br>
-
-                    📍
-                    ${q.latitude.toFixed(5)},
-                    ${q.longitude.toFixed(5)}
-
-                    <br>
-
-                    <button
-                        onclick="toggleQuest(
-                            '${q.id}',
-                            ${q.active}
-                        )">
-
-                        ${
-                            q.active
-                            ? "Désactiver"
-                            : "Activer"
-                        }
-
-                    </button>
-
-                    <button
-                        class="danger"
-                        onclick="deleteQuest(
-                            '${q.id}'
-                        )">
-
-                        Supprimer
-
-                    </button>
-
-                </div>
-
-            `)
-            .join("");
-
-
-    if (amap) {
-
-        quests.forEach(q => {
-
-            L.marker([
-                q.latitude,
-                q.longitude
-            ])
-
-            .addTo(amap)
-
-            .bindPopup(
-                esc(q.name)
-            );
-
-        });
-
-    }
-
 }
-
-
-// ------------------------------
-// ACTIVER / DÉSACTIVER
-// ------------------------------
-
-async function toggleQuest(
-    id,
-    active
-) {
-
-    await db
-        .from("quests")
-        .update({
-            active:
-                !active
-        })
-        .eq(
-            "id",
-            id
-        );
-
-
-    await listQuests();
-
-}
-
-
-// ------------------------------
-// SUPPRIMER
-// ------------------------------
-
-async function deleteQuest(
-    id
-) {
-
-    if (
-        !confirm(
-            "Supprimer cette quête ?"
-        )
-    )
-        return;
-
-
-    await db
-        .from("quests")
-        .delete()
-        .eq(
-            "id",
-            id
-        );
-
-
-    await listQuests();
-
-}
-
-
-// ------------------------------
-// DÉMARRAGE
-// ------------------------------
-
-(async () => {
-
-    const {
-        data
-    } =
-        await db.auth
-            .getSession();
-
-
-    if (
-        data.session
-    ) {
-
-        await boot();
-
-    }
-
-})();
