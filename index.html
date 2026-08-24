@@ -1,161 +1,270 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
+
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>NatureQuest</title>
+    <meta charset="UTF-8">
 
-    <link rel="stylesheet"
-          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="style.css">
+    <title>🌿 NatureQuest</title>
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <link
+        rel="stylesheet"
+        href="style.css">
+
 </head>
 
 <body>
 
 <header>
+
     <h1>🌿 NatureQuest</h1>
-    <a href="admin.html">🔐 Admin</a>
+
+    <a href="admin.html">
+        🔐 Administration
+    </a>
+
 </header>
+
 
 <main>
 
-    <!-- COMPTE -->
-    <section id="auth" class="card">
+    <!-- PROFIL -->
 
-        <h2>👤 Mon compte</h2>
+    <section class="card">
 
-        <div class="cols">
+        <h2>👤 Mon profil</h2>
+
+        <input
+            id="username"
+            placeholder="Ton pseudo">
+
+        <button onclick="saveProfile()">
+            💾 Enregistrer
+        </button>
+
+        <div class="stats">
 
             <div>
-                <h3>Créer un compte</h3>
-
-                <input id="suName"
-                       placeholder="Pseudo">
-
-                <input id="suEmail"
-                       type="email"
-                       placeholder="E-mail">
-
-                <input id="suPass"
-                       type="password"
-                       placeholder="Mot de passe">
-
-                <button id="signup">
-                    Créer mon compte
-                </button>
+                🏆
+                <b id="score">0</b>
+                points
             </div>
 
             <div>
-                <h3>Connexion</h3>
-
-                <input id="liEmail"
-                       type="email"
-                       placeholder="E-mail">
-
-                <input id="liPass"
-                       type="password"
-                       placeholder="Mot de passe">
-
-                <button id="login">
-                    Connexion
-                </button>
+                ✅
+                <b id="completed">0</b>
+                quêtes
             </div>
 
         </div>
-
-        <p id="msg"></p>
-
-    </section>
-
-
-    <!-- PROFIL -->
-    <section id="profile"
-             class="card hidden">
-
-        <h2 id="name"></h2>
-
-        <p>
-            🏆
-            <b id="points">0</b>
-            points
-        </p>
-
-        <button id="logout">
-            Déconnexion
-        </button>
 
     </section>
 
 
     <!-- CARTE -->
+
     <section class="card">
 
         <h2>🗺️ Carte des quêtes</h2>
 
         <div id="map"></div>
 
-        <button id="scan">
-            📷 Scanner un QR code
+        <button onclick="locatePlayer()">
+            📍 Ma position
         </button>
-
-        <div id="quests"></div>
 
     </section>
 
 
     <!-- SCANNER -->
-    <section id="scanner"
-             class="card hidden">
+
+    <section class="card">
 
         <h2>📷 Scanner un QR code</h2>
 
         <div id="reader"></div>
 
-        <button id="closeScan">
+        <button onclick="startScanner()">
+            📷 Scanner
+        </button>
+
+        <button
+            class="danger"
+            onclick="stopScanner()">
+
             Fermer
+
         </button>
 
     </section>
 
 
-    <!-- QUESTION -->
-    <section id="quest"
-             class="card hidden">
+    <!-- QUÊTE -->
 
-        <h2 id="qName"></h2>
+    <section
+        id="questSection"
+        class="card hidden">
 
-        <p id="qDesc"></p>
+        <h2 id="questName"></h2>
 
-        <h3 id="qQuestion"></h3>
+        <p id="questDescription"></p>
 
-        <div id="answer"></div>
+        <hr>
 
-        <button id="validate">
-            ✅ Valider ma réponse
+        <h3 id="questQuestion"></h3>
+
+        <div id="answers"></div>
+
+        <button onclick="validateQuest()">
+
+            ✅ Valider
+
         </button>
 
-        <p id="result"></p>
+        <p id="questResult"></p>
+
+    </section>
+
+
+    <!-- LISTE -->
+
+    <section class="card">
+
+        <h2>🌳 Quêtes disponibles</h2>
+
+        <div id="questList"></div>
 
     </section>
 
 </main>
 
+
 <footer>
-    NatureQuest 🌳
+
+    NatureQuest 🌿
+
 </footer>
 
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- ======================================
+     LES QUÊTES SONT DIRECTEMENT ICI
+====================================== -->
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
 
-<script src="https://unpkg.com/html5-qrcode"></script>
+const QUESTS = [
 
-<script src="config.js"></script>
-<script src="common.js"></script>
+    {
+        id: "parc001",
+
+        qr: "NATURE-001",
+
+        name: "🌳 Le parc de demain",
+
+        description:
+            "Découvre le projet de création du parc.",
+
+        question:
+            "Imagine ton parc de rêve. Que voudrais-tu y trouver ?",
+
+        type: "creative",
+
+        answer: "",
+
+        points: 10,
+
+        latitude: 49.0910,
+
+        longitude: 4.8890,
+
+        next: "parc002",
+
+        active: true
+    },
+
+
+    {
+        id: "parc002",
+
+        qr: "NATURE-002",
+
+        name: "🌿 À la découverte de la nature",
+
+        description:
+            "Observe attentivement ton environnement.",
+
+        question:
+            "Cite trois éléments naturels que tu peux observer ici.",
+
+        type: "creative",
+
+        answer: "",
+
+        points: 15,
+
+        latitude: 49.0920,
+
+        longitude: 4.8900,
+
+        next: "parc003",
+
+        active: true
+    },
+
+
+    {
+        id: "parc003",
+
+        qr: "NATURE-003",
+
+        name: "🐦 Les animaux",
+
+        description:
+            "Regarde autour de toi.",
+
+        question:
+            "Quel animal peux-tu observer ou entendre ici ?",
+
+        type: "creative",
+
+        answer: "",
+
+        points: 20,
+
+        latitude: 49.0930,
+
+        longitude: 4.8910,
+
+        next: null,
+
+        active: true
+    }
+
+];
+
+</script>
+
+
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
+
+<script
+    src="https://unpkg.com/html5-qrcode">
+</script>
+
+
 <script src="app.js"></script>
 
 </body>
+
 </html>
