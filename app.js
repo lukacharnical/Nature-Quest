@@ -1,314 +1,350 @@
-let user = null;
-
-let quests = [];
-
-let current = null;
+let map;
 
 let scanner = null;
 
+let currentQuest = null;
 
-// ------------------------------
-// CARTE
-// ------------------------------
+let playerData = {
 
-const map = L.map("map")
-    .setView([46.6, 1.88], 6);
+    username: "",
+
+    score: 0,
+
+    completed: []
+
+};
 
 
-L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    {
-        attribution:
-            "© OpenStreetMap contributors"
+// ======================================
+// CHARGEMENT
+// ======================================
+
+window.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        loadPlayer();
+
+        createMap();
+
+        displayQuests();
+
     }
-).addTo(map);
+);
 
 
-// ------------------------------
-// CHARGEMENT DES QUÊTES
-// ------------------------------
+// ======================================
+// PROFIL
+// ======================================
 
-async function loadQuests() {
+function loadPlayer() {
 
-    const {
-        data,
-        error
-    } = await db
-        .from("quests")
-        .select("*")
-        .eq("active", true);
-
-
-    if (error) {
-
-        msg(
-            "msg",
-            error.message,
-            "err"
+    const saved =
+        localStorage.getItem(
+            "naturequest_player"
         );
 
-        return;
+
+    if (saved) {
+
+        playerData =
+            JSON.parse(saved);
+
     }
 
 
-    quests = data || [];
+    document.getElementById(
+        "username"
+    ).value =
+        playerData.username;
 
 
-    $("quests").innerHTML =
-        quests.map(q => `
+    updateStats();
 
-            <div class="quest">
+}
+
+
+function saveProfile() {
+
+    playerData.username =
+        document.getElementById(
+            "username"
+        ).value.trim();
+
+
+    savePlayer();
+
+    alert(
+        "✅ Profil enregistré !"
+    );
+
+}
+
+
+function savePlayer() {
+
+    localStorage.setItem(
+
+        "naturequest_player",
+
+        JSON.stringify(
+            playerData
+        )
+
+    );
+
+    updateStats();
+
+}
+
+
+function updateStats() {
+
+    document.getElementById(
+        "score"
+    ).textContent =
+        playerData.score;
+
+
+    document.getElementById(
+        "completed"
+    ).textContent =
+        playerData.completed.length;
+
+}
+
+
+// ======================================
+// CARTE
+// ======================================
+
+function createMap() {
+
+    map = L.map(
+        "map"
+    ).setView(
+
+        [
+            46.6,
+            1.88
+        ],
+
+        6
+
+    );
+
+
+    L.tileLayer(
+
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+
+        {
+
+            attribution:
+                "© OpenStreetMap contributors"
+
+        }
+
+    ).addTo(map);
+
+
+    QUESTS.forEach(
+        quest => {
+
+            if (!quest.active)
+                return;
+
+
+            const marker =
+                L.marker([
+
+                    quest.latitude,
+
+                    quest.longitude
+
+                ]).addTo(map);
+
+
+            marker.bindPopup(`
 
                 <b>
-                    ${esc(q.name)}
+                    ${quest.name}
                 </b>
 
                 <br>
 
-                ${esc(q.description)}
+                🏆
+                ${quest.points}
+                points
 
                 <br>
 
-                🏆 ${q.points} points
+                🔲
+                ${quest.qr}
 
-                <br>
+            `);
 
-                🔲 ${esc(q.qr_code)}
-
-            </div>
-
-        `).join("");
-
-
-    quests.forEach(q => {
-
-        L.marker([
-            q.latitude,
-            q.longitude
-        ])
-
-        .addTo(map)
-
-        .bindPopup(`
-
-            <b>
-                ${esc(q.name)}
-            </b>
-
-            <br>
-
-            ${q.points} points
-
-        `);
-
-    });
+        }
+    );
 
 }
 
 
-// ------------------------------
-// SESSION
-// ------------------------------
+// ======================================
+// POSITION
+// ======================================
 
-async function session() {
+function locatePlayer() {
 
-    const {
-        data
-    } = await db.auth.getSession();
+    if (!navigator.geolocation) {
 
-
-    user =
-        data.session?.user || null;
-
-
-    $("auth")
-        .classList
-        .toggle(
-            "hidden",
-            !!user
+        alert(
+            "La géolocalisation n'est pas disponible."
         );
 
-
-    $("profile")
-        .classList
-        .toggle(
-            "hidden",
-            !user
-        );
-
-
-    if (!user)
         return;
 
-
-    const {
-        data: profile
-    } = await db
-        .from("profiles")
-        .select(
-            "username,points"
-        )
-        .eq(
-            "id",
-            user.id
-        )
-        .single();
-
-
-    if (profile) {
-
-        $("name").textContent =
-            "👤 " +
-            profile.username;
-
-        $("points").textContent =
-            profile.points;
-
     }
+
+
+    navigator.geolocation.getCurrentPosition(
+
+        position => {
+
+            const lat =
+                position.coords.latitude;
+
+            const lng =
+                position.coords.longitude;
+
+
+            map.setView(
+
+                [
+                    lat,
+                    lng
+                ],
+
+                17
+
+            );
+
+
+            L.marker([
+                lat,
+                lng
+            ])
+
+            .addTo(map)
+
+            .bindPopup(
+                "📍 Tu es ici"
+            )
+
+            .openPopup();
+
+        },
+
+        () => {
+
+            alert(
+                "Impossible de récupérer ta position."
+            );
+
+        }
+
+    );
 
 }
 
 
-// ------------------------------
-// INSCRIPTION
-// ------------------------------
+// ======================================
+// LISTE DES QUÊTES
+// ======================================
 
-$("signup").onclick =
-async () => {
+function displayQuests() {
 
-    const username =
-        $("suName")
-            .value
-            .trim();
-
-    const email =
-        $("suEmail")
-            .value
-            .trim();
-
-    const password =
-        $("suPass")
-            .value;
-
-
-    if (
-        !username ||
-        !email ||
-        password.length < 6
-    ) {
-
-        msg(
-            "msg",
-            "Remplis tous les champs. Le mot de passe doit contenir au moins 6 caractères.",
-            "err"
+    const container =
+        document.getElementById(
+            "questList"
         );
 
-        return;
-    }
+
+    container.innerHTML = "";
 
 
-    const {
-        error
-    } =
-        await db.auth.signUp({
+    QUESTS.forEach(
+        quest => {
 
-            email,
+            if (!quest.active)
+                return;
 
-            password,
 
-            options: {
+            const completed =
+                playerData.completed
+                    .includes(
+                        quest.id
+                    );
 
-                data: {
-                    username
+
+            const div =
+                document.createElement(
+                    "div"
+                );
+
+
+            div.className =
+                "quest";
+
+
+            div.innerHTML = `
+
+                <h3>
+                    ${quest.name}
+                </h3>
+
+                <p>
+                    ${quest.description}
+                </p>
+
+                <p>
+                    🏆
+                    ${quest.points}
+                    points
+                </p>
+
+                <p>
+                    🔲
+                    ${quest.qr}
+                </p>
+
+                ${
+                    completed
+                    ? "✅ Terminée"
+                    : "🔒 Scanne le QR"
                 }
 
-            }
-
-        });
+            `;
 
 
-    msg(
-        "msg",
+            container.appendChild(
+                div
+            );
 
-        error
-            ? error.message
-            : "✅ Compte créé ! Vérifie ton e-mail si Supabase demande une confirmation.",
-
-        error
-            ? "err"
-            : "ok"
+        }
     );
 
-};
+}
 
 
-// ------------------------------
-// CONNEXION
-// ------------------------------
+// ======================================
+// SCANNER
+// ======================================
 
-$("login").onclick =
-async () => {
+async function startScanner() {
 
-    const {
-        error
-    } =
-        await db.auth
-            .signInWithPassword({
-
-                email:
-                    $("liEmail")
-                        .value
-                        .trim(),
-
-                password:
-                    $("liPass")
-                        .value
-
-            });
-
-
-    msg(
-        "msg",
-
-        error
-            ? error.message
-            : "✅ Connexion réussie !",
-
-        error
-            ? "err"
-            : "ok"
-    );
-
-
-    await session();
-
-};
-
-
-// ------------------------------
-// DÉCONNEXION
-// ------------------------------
-
-$("logout").onclick =
-async () => {
-
-    await db.auth.signOut();
-
-    await session();
-
-};
-
-
-// ------------------------------
-// SCANNER QR
-// ------------------------------
-
-$("scan").onclick =
-async () => {
-
-    $("scanner")
-        .classList
-        .remove("hidden");
+    if (scanner)
+        return;
 
 
     scanner =
@@ -327,25 +363,20 @@ async () => {
             },
 
             {
+
                 fps: 10,
 
                 qrbox: 250
 
             },
 
-            async code => {
-
-                await scanner.stop();
-
-                scanner = null;
-
-                $("scanner")
-                    .classList
-                    .add("hidden");
+            qrCodeMessage => {
 
                 openQuest(
-                    code.trim()
+                    qrCodeMessage.trim()
                 );
+
+                stopScanner();
 
             }
 
@@ -355,280 +386,377 @@ async () => {
 
     catch (error) {
 
-        msg(
-            "msg",
-            "Impossible d'utiliser la caméra. Vérifie l'autorisation et utilise HTTPS.",
-            "err"
+        alert(
+
+            "❌ Impossible d'utiliser la caméra.\n\n" +
+
+            "Vérifie que le site utilise HTTPS " +
+            "et que la caméra est autorisée."
+
         );
-
-    }
-
-};
-
-
-// ------------------------------
-// FERMER SCANNER
-// ------------------------------
-
-$("closeScan").onclick =
-async () => {
-
-    if (scanner) {
-
-        try {
-            await scanner.stop();
-        }
-
-        catch {}
 
         scanner = null;
-
-    }
-
-
-    $("scanner")
-        .classList
-        .add("hidden");
-
-};
-
-
-// ------------------------------
-// OUVRIR UNE QUÊTE
-// ------------------------------
-
-async function openQuest(code) {
-
-    const {
-        data,
-        error
-    } = await db
-        .from("quests")
-        .select("*")
-        .eq(
-            "qr_code",
-            code
-        )
-        .eq(
-            "active",
-            true
-        )
-        .single();
-
-
-    if (
-        error ||
-        !data
-    ) {
-
-        alert(
-            "❌ Ce QR code ne correspond à aucune quête."
-        );
-
-        return;
-    }
-
-
-    current = data;
-
-
-    $("quest")
-        .classList
-        .remove("hidden");
-
-
-    $("qName")
-        .textContent =
-        data.name;
-
-
-    $("qDesc")
-        .textContent =
-        data.description;
-
-
-    $("qQuestion")
-        .textContent =
-        data.question;
-
-
-    $("result")
-        .textContent = "";
-
-
-    if (
-        data.question_type ===
-        "choice"
-    ) {
-
-        $("answer").innerHTML =
-            (data.options || [])
-                .map(option => `
-
-                    <label class="choice">
-
-                        <input
-                            type="radio"
-                            name="choice"
-                            value="${esc(option)}">
-
-                        ${esc(option)}
-
-                    </label>
-
-                `)
-                .join("");
-
-    }
-
-    else {
-
-        $("answer").innerHTML = `
-
-            <textarea
-                id="answerInput"
-                placeholder="Écris ta réponse">
-            </textarea>
-
-        `;
 
     }
 
 }
 
 
-// ------------------------------
-// VALIDATION
-// ------------------------------
+// ======================================
+// ARRÊTER SCANNER
+// ======================================
 
-$("validate").onclick =
-async () => {
+async function stopScanner() {
 
-    if (!user) {
+    if (!scanner)
+        return;
 
-        msg(
-            "result",
-            "🔐 Connecte-toi pour répondre.",
-            "err"
+
+    try {
+
+        await scanner.stop();
+
+    }
+
+    catch {}
+
+    scanner = null;
+
+}
+
+
+// ======================================
+// OUVRIR QUÊTE
+// ======================================
+
+function openQuest(qrCode) {
+
+    const quest =
+        QUESTS.find(
+
+            q =>
+                q.qr.toLowerCase() ===
+                qrCode.toLowerCase()
+
+        );
+
+
+    if (!quest) {
+
+        alert(
+            "❌ QR code inconnu."
         );
 
         return;
+
     }
 
 
-    let answer;
+    currentQuest =
+        quest;
+
+
+    document.getElementById(
+        "questSection"
+    )
+
+    .classList
+
+    .remove(
+        "hidden"
+    );
+
+
+    document.getElementById(
+        "questName"
+    ).textContent =
+        quest.name;
+
+
+    document.getElementById(
+        "questDescription"
+    ).textContent =
+        quest.description;
+
+
+    document.getElementById(
+        "questQuestion"
+    ).textContent =
+        quest.question;
+
+
+    document.getElementById(
+        "questResult"
+    ).textContent = "";
+
+
+    const answers =
+        document.getElementById(
+            "answers"
+        );
+
+
+    answers.innerHTML = "";
 
 
     if (
-        current.question_type ===
+        quest.type ===
         "choice"
     ) {
 
-        answer =
-            document.querySelector(
-                'input[name="choice"]:checked'
-            )?.value;
+        quest.options.forEach(
+            option => {
 
-    }
+                answers.innerHTML += `
 
-    else {
+                    <label class="choice">
 
-        answer =
-            $("answerInput")
-                ?.value
-                .trim();
+                        <input
+                            type="radio"
+                            name="answer"
+                            value="${option}">
 
-    }
+                        ${option}
 
+                    </label>
 
-    if (!answer) {
+                `;
 
-        msg(
-            "result",
-            "❌ Tu dois donner une réponse.",
-            "err"
-        );
-
-        return;
-    }
-
-
-    const {
-        data,
-        error
-    } =
-        await db.rpc(
-            "submit_quest_answer",
-            {
-                p_quest_id:
-                    current.id,
-
-                p_answer:
-                    answer
             }
         );
 
+    }
 
-    if (error) {
+    else {
 
-        msg(
-            "result",
-            error.message,
-            "err"
-        );
+        answers.innerHTML = `
 
-        return;
+            <textarea
+                id="answerInput"
+                placeholder="Écris ta réponse ici...">
+            </textarea>
+
+        `;
+
     }
 
 
-    const result =
-        data?.[0] || data;
+    document.getElementById(
+        "questSection"
+    ).scrollIntoView({
+
+        behavior:
+            "smooth"
+
+    });
+
+}
 
 
-    if (result.correct) {
+// ======================================
+// VALIDATION
+// ======================================
 
-        msg(
-            "result",
+function validateQuest() {
 
-            `🎉 Bravo ! +${result.points_awarded} points`,
+    if (!currentQuest)
+        return;
 
-            "ok"
+
+    // Déjà terminée
+
+    if (
+        playerData.completed
+            .includes(
+                currentQuest.id
+            )
+    ) {
+
+        showResult(
+            "ℹ️ Tu as déjà terminé cette quête."
         );
+
+        return;
+
+    }
+
+
+    let answer = "";
+
+
+    if (
+        currentQuest.type ===
+        "choice"
+    ) {
+
+        const selected =
+            document.querySelector(
+                'input[name="answer"]:checked'
+            );
+
+
+        if (!selected) {
+
+            showResult(
+                "❌ Choisis une réponse."
+            );
+
+            return;
+
+        }
+
+
+        answer =
+            selected.value;
 
     }
 
     else {
 
-        msg(
-            "result",
-            "❌ Mauvaise réponse.",
-            "err"
-        );
+        answer =
+            document.getElementById(
+                "answerInput"
+            ).value.trim();
+
+
+        if (!answer) {
+
+            showResult(
+                "❌ Écris une réponse."
+            );
+
+            return;
+
+        }
 
     }
 
 
-    await session();
+    // ==================================
+    // QUESTION CRÉATIVE
+    // ==================================
 
-};
+    if (
+        currentQuest.type ===
+        "creative"
+    ) {
+
+        finishQuest();
+
+        return;
+
+    }
 
 
-// ------------------------------
-// DÉMARRAGE
-// ------------------------------
+    // ==================================
+    // RÉPONSE EXACTE
+    // ==================================
 
-db.auth.onAuthStateChange(
-    () => {
+    const correct =
+        answer.trim().toLowerCase() ===
+        currentQuest.answer
+            .trim()
+            .toLowerCase();
 
-        setTimeout(
-            session,
-            0
+
+    if (correct) {
+
+        finishQuest();
+
+    }
+
+    else {
+
+        showResult(
+            "❌ Mauvaise réponse. Réessaie !"
         );
 
     }
-);
+
+}
 
 
-loadQuests();
+// ======================================
+// TERMINER
+// ======================================
 
-session();
+function finishQuest() {
+
+    playerData.completed.push(
+        currentQuest.id
+    );
+
+
+    playerData.score +=
+        currentQuest.points;
+
+
+    savePlayer();
+
+
+    showResult(
+
+        `🎉 Bravo ! +${currentQuest.points} points !`
+
+    );
+
+
+    displayQuests();
+
+
+    // Prochaine quête
+
+    if (
+        currentQuest.next
+    ) {
+
+        const next =
+            QUESTS.find(
+
+                q =>
+                    q.id ===
+                    currentQuest.next
+
+            );
+
+
+        if (next) {
+
+            setTimeout(
+                () => {
+
+                    alert(
+
+                        `🔓 Nouvelle quête débloquée !\n\n` +
+
+                        next.name
+
+                    );
+
+                },
+
+                500
+
+            );
+
+        }
+
+    }
+
+}
+
+
+// ======================================
+// MESSAGE
+// ======================================
+
+function showResult(
+    message
+) {
+
+    document.getElementById(
+        "questResult"
+    ).textContent =
+        message;
+
+}
