@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌿 Jeu Nature QR</title>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #eef6ee;
+    color: #222;
+}
+
+header {
+    background: #176b3a;
+    color: white;
+    padding: 18px;
+    text-align: center;
+}
+
+.container {
+    max-width: 700px;
+    margin: auto;
+    padding: 15px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    margin-bottom: 15px;
+    border-radius: 15px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.12);
+}
+
+button {
+    width: 100%;
+    border: 0;
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    background: #176b3a;
+    color: white;
+}
+
+button.secondary {
+    background: #555;
+}
+
+button.danger {
+    background: #c62828;
+}
+
+button.warning {
+    background: #e69500;
+}
+
+input,
+textarea,
+select {
+    width: 100%;
+    padding: 12px;
+    margin: 6px 0 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+label {
+    font-weight: bold;
+}
+
+.hidden {
+    display: none;
+}
+
+#reader,
+#playerReader {
+    width: 100%;
+    margin-top: 15px;
+}
+
+.qr-info {
+    background: #e8f5e9;
+    padding: 12px;
+    border-radius: 10px;
+    margin-top: 12px;
+    word-break: break-word;
+}
+
+.question {
+    font-size: 21px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.score {
+    text-align: center;
+    font-size: 25px;
+    font-weight: bold;
+}
+
+.success {
+    color: #176b3a;
+    font-weight: bold;
+}
+
+.error {
+    color: #c62828;
+    font-weight: bold;
+}
+
+.admin-item {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 10px;
+}
+
+.small {
+    font-size: 13px;
+    color: #666;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>🌿 Jeu Nature QR</h1>
+</header>
+
+<div class="container">
+
+<!-- =========================
+     MENU
+========================= -->
+
+<div id="menu" class="card">
+
+    <h2>Bienvenue 👋</h2>
+
+    <button onclick="showPlayer()">
+        🎮 Joueur
+    </button>
+
+    <button onclick="showAdminLogin()">
+        🔐 Administration
+    </button>
+
+</div>
+
+
+<!-- =========================
+     CONNEXION ADMIN
+========================= -->
+
+<div id="adminLogin" class="card hidden">
+
+    <h2>🔐 Administration</h2>
+
+    <label>Code administrateur</label>
+
+    <input
+        type="password"
+        id="adminPassword"
+        placeholder="Code admin"
+    >
+
+    <button onclick="loginAdmin()">
+        Se connecter
+    </button>
+
+    <p id="loginError" class="error"></p>
+
+    <button class="secondary" onclick="backToMenu()">
+        Retour
+    </button>
+
+</div>
+
+
+<!-- =========================
+     ADMIN
+========================= -->
+
+<div id="adminPanel" class="hidden">
+
+    <div class="card">
+
+        <h2>⚙️ Administration</h2>
+
+        <button onclick="startAdminScanner()">
+            📷 Scanner un QR existant
+        </button>
+
+        <button onclick="newQuestion()">
+            ➕ Ajouter une étape
+        </button>
+
+        <button onclick="showQuestions()">
+            📋 Voir les étapes
+        </button>
+
+        <button class="warning" onclick="exportData()">
+            💾 Exporter les données
+        </button>
+
+        <button
+            class="secondary"
+            onclick="document.getElementById('importFile').click()"
+        >
+            📥 Importer les données
+        </button>
+
+        <input
+            type="file"
+            id="importFile"
+            accept=".json"
+            style="display:none"
+            onchange="importData(event)"
+        >
+
+        <button class="danger" onclick="logoutAdmin()">
+            🚪 Déconnexion
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- =========================
+     SCANNER ADMIN
+========================= -->
+
+<div id="adminScannerPage" class="card hidden">
+
+    <h2>📷 Scanner un QR existant</h2>
+
+    <p>
+        Scanne le QR code d'une étape existante.
+    </p>
+
+    <div id="reader"></div>
+
+    <div id="adminScanResult"></div>
+
+    <button class="secondary" onclick="stopAdminScanner()">
+        ⬅️ Retour
+    </button>
+
+</div>
+
+
+<!-- =========================
+     ÉDITEUR
+========================= -->
+
+<div id="editor" class="card hidden">
+
+    <h2 id="editorTitle">
+        ➕ Nouvelle étape
+    </h2>
+
+    <label>ID</label>
+
+    <input
+        id="id"
+        placeholder="parc002"
+    >
+
+    <label>QR code</label>
+
+    <input
+        id="qr"
+        placeholder="NATURE-002"
+    >
+
+    <div id="qrInfo" class="qr-info hidden"></div>
+
+    <label>Nom</label>
+
+    <input
+        id="name"
+        placeholder="🌿 À la découverte de la nature"
+    >
+
+    <label>Description</label>
+
+    <textarea
+        id="description"
+        rows="3"
+    ></textarea>
+
+    <label>Question</label>
+
+    <textarea
+        id="question"
+        rows="4"
+    ></textarea>
+
+    <label>Type</label>
+
+    <select id="type">
+
+        <option value="creative">
+            Créative
+        </option>
+
+        <option value="qcm">
+            QCM
+        </option>
+
+        <option value="text">
+            Réponse texte
+        </option>
+
+        <option value="info">
+            Information
+        </option>
+
+    </select>
+
+    <label>Réponse</label>
+
+    <textarea
+        id="answer"
+        rows="3"
+        placeholder="Réponse attendue..."
+    ></textarea>
+
+    <label>Points</label>
+
+    <input
+        type="number"
+        id="points"
+        value="15"
+        min="0"
+    >
+
+    <label>Latitude</label>
+
+    <input
+        type="number"
+        step="any"
+        id="latitude"
+        placeholder="49.0920"
+    >
+
+    <label>Longitude</label>
+
+    <input
+        type="number"
+        step="any"
+        id="longitude"
+        placeholder="4.8900"
+    >
+
+    <label>Étape suivante</label>
+
+    <input
+        id="next"
+        placeholder="parc003"
+    >
+
+    <label>
+        <input
+            type="checkbox"
+            id="active"
+            checked
+            style="width:auto"
+        >
+        Étape active
+    </label>
+
+    <button onclick="saveQuestion()">
+        💾 Enregistrer
+    </button>
+
+    <button class="secondary" onclick="cancelEditor()">
+        Annuler
+    </button>
+
+</div>
+
+
+<!-- =========================
+     LISTE
+========================= -->
+
+<div id="questionsPage" class="card hidden">
+
+    <h2>📋 Étapes du jeu</h2>
+
+    <div id="questionsList"></div>
+
+    <button class="secondary" onclick="backToAdmin()">
+        ⬅️ Retour
+    </button>
+
+</div>
+
+
+<!-- =========================
+     JOUEUR
+========================= -->
+
+<div id="playerPage" class="card hidden">
+
+    <h2>🎮 Mode Joueur</h2>
+
+    <div class="score">
+        ⭐ <span id="score">0</span>
+    </div>
+
+    <button onclick="startPlayerScanner()">
+        📷 Scanner le QR
+    </button>
+
+    <div id="playerReader"></div>
+
+    <div id="game"></div>
+
+    <button class="secondary" onclick="backToMenu()">
+        ⬅️ Retour
+    </button>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* ==================================================
+   CONFIGURATION
+================================================== */
+
+const ADMIN_PASSWORD = "1234";
+
+let questions = JSON.parse(
+    localStorage.getItem("natureQuestions") || "null"
+);
+
+
+/* ==================================================
+   DONNÉES PAR DÉFAUT
+================================================== */
+
+if (!questions) {
+
+    questions = [
+
+        {
+            id: "parc002",
+
+            qr: "NATURE-002",
+
+            name: "🌿 À la découverte de la nature",
+
+            description:
+                "Observe attentivement ton environnement.",
+
+            question:
+                "Cite trois éléments naturels que tu peux observer ici.",
+
+            type: "creative",
+
+            answer: "",
+
+            points: 15,
+
+            latitude: 49.0920,
+
+            longitude: 4.8900,
+
+            next: "parc003",
+
+            active: true
+        }
+
+    ];
+
+    saveDatabase();
+
+}
+
+
+/* ==================================================
+   VARIABLES
+================================================== */
+
+let adminScanner = null;
+let playerScanner = null;
+
+let editingId = null;
+
+let score = 0;
+
+
+/* ==================================================
+   SAUVEGARDE
+================================================== */
+
+function saveDatabase() {
+
+    localStorage.setItem(
+        "natureQuestions",
+        JSON.stringify(questions)
+    );
+
+}
+
+
+/* ==================================================
+   AFFICHAGE
+================================================== */
+
+function hideAll() {
+
+    document.querySelectorAll(".container > div").forEach(
+        element => element.classList.add("hidden")
+    );
+
+}
+
+
+/* ==================================================
+   MENU
+================================================== */
+
+function backToMenu() {
+
+    stopAdminScanner();
+    stopPlayerScanner();
+
+    hideAll();
+
+    document
+        .getElementById("menu")
+        .classList
+        .remove("hidden");
+
+}
+
+
+function showPlayer() {
+
+    hideAll();
+
+    document
+        .getElementById("playerPage")
+        .classList
+        .remove("hidden");
+
+}
+
+
+function showAdminLogin() {
+
+    hideAll();
+
+    document
+        .getElementById("adminLogin")
+        .classList
+        .remove("hidden");
+
+}
+
+
+/* ==================================================
+   ADMIN LOGIN
+================================================== */
+
+function loginAdmin() {
+
+    const password =
+        document.getElementById("adminPassword").value;
+
+    if (password === ADMIN_PASSWORD) {
+
+        document.getElementById("adminPassword").value = "";
+
+        document.getElementById("loginError").textContent = "";
+
+        hideAll();
+
+        document
+            .getElementById("adminPanel")
+            .classList
+            .remove("hidden");
+
+    } else {
+
+        document.getElementById("loginError").textContent =
+            "❌ Code incorrect.";
+
+    }
+
+}
+
+
+function logoutAdmin() {
+
+    stopAdminScanner();
+
+    backToMenu();
+
+}
+
+
+function backToAdmin() {
+
+    hideAll();
+
+    document
+        .getElementById("adminPanel")
+        .classList
+        .remove("hidden");
+
+}
+
+
+/* ==================================================
+   SCANNER ADMIN
+================================================== */
+
+function startAdminScanner() {
+
+    hideAll();
+
+    document
+        .getElementById("adminScannerPage")
+        .classList
+        .remove("hidden");
+
+    document.getElementById("adminScanResult").innerHTML = "";
+
+    adminScanner =
+        new Html5Qrcode("reader");
+
+    adminScanner.start(
+
+        {
+            facingMode: "environment"
+        },
+
+        {
+            fps: 10,
+
+            qrbox: {
+                width: 250,
+                height: 250
+            }
+        },
+
+        function(decodedText) {
+
+            adminQRFound(decodedText);
+
+        },
+
+        function() {}
+
+    ).catch(function() {
+
+        document.getElementById(
+            "adminScanResult"
+        ).innerHTML =
+
+            "<p class='error'>❌ Impossible d'utiliser la caméra.</p>";
+
+    });
+
+}
+
+
+function adminQRFound(code) {
+
+    stopAdminScanner();
+
+    const existing =
+        questions.find(
+            q => q.qr === code
+        );
+
+    if (existing) {
+
+        document.getElementById(
+            "adminScanResult"
+        ).innerHTML = `
+
+            <div class="qr-info">
+
+                <strong>✅ QR trouvé !</strong>
+
+                <p>
+                    QR : ${escapeHTML(code)}
+                </p>
+
+                <p>
+                    Étape :
+                    ${escapeHTML(existing.name)}
+                </p>
+
+                <button
+                    onclick="editQuestion('${existing.id}')"
+                >
+                    ✏️ Modifier cette étape
+                </button>
+
+            </div>
+        `;
+
+    } else {
+
+        document.getElementById(
+            "adminScanResult"
+        ).innerHTML = `
+
+            <div class="qr-info">
+
+                <strong>🆕 QR inconnu</strong>
+
+                <p>
+                    QR : ${escapeHTML(code)}
+                </p>
+
+                <button
+                    onclick="newQuestion('${escapeAttribute(code)}')"
+                >
+                    ➕ Créer une étape pour ce QR
+                </button>
+
+            </div>
+        `;
+
+    }
+
+}
+
+
+function stopAdminScanner() {
+
+    if (adminScanner) {
+
+        adminScanner
+            .stop()
+            .catch(() => {});
+
+        adminScanner = null;
+
+    }
+
+}
+
+
+/* ==================================================
+   NOUVELLE ÉTAPE
+================================================== */
+
+function newQuestion(qr = "") {
+
+    hideAll();
+
+    editingId = null;
+
+    document.getElementById("editorTitle").textContent =
+        "➕ Nouvelle étape";
+
+    document.getElementById("id").value = "";
+
+    document.getElementById("qr").value = qr;
+
+    document.getElementById("name").value = "";
+
+    document.getElementById("description").value = "";
+
+    document.getElementById("question").value = "";
+
+    document.getElementById("type").value = "creative";
+
+    document.getElementById("answer").value = "";
+
+    document.getElementById("points").value = "15";
+
+    document.getElementById("latitude").value = "";
+
+    document.getElementById("longitude").value = "";
+
+    document.getElementById("next").value = "";
+
+    document.getElementById("active").checked = true;
+
+    updateQRInfo();
+
+    document
+        .getElementById("editor")
+        .classList
+        .remove("hidden");
+
+}
+
+
+/* ==================================================
+   MODIFIER
+================================================== */
+
+function editQuestion(id) {
+
+    const q =
+        questions.find(
+            item => item.id === id
+        );
+
+    if (!q) return;
+
+    editingId = id;
+
+    hideAll();
+
+    document.getElementById("editorTitle").textContent =
+        "✏️ Modifier l'étape";
+
+    document.getElementById("id").value =
+        q.id;
+
+    document.getElementById("qr").value =
+        q.qr;
+
+    document.getElementById("name").value =
+        q.name || "";
+
+    document.getElementById("description").value =
+        q.description || "";
+
+    document.getElementById("question").value =
+        q.question || "";
+
+    document.getElementById("type").value =
+        q.type || "creative";
+
+    document.getElementById("answer").value =
+        q.answer || "";
+
+    document.getElementById("points").value =
+        q.points ?? 0;
+
+    document.getElementById("latitude").value =
+        q.latitude ?? "";
+
+    document.getElementById("longitude").value =
+        q.longitude ?? "";
+
+    document.getElementById("next").value =
+        q.next || "";
+
+    document.getElementById("active").checked =
+        q.active !== false;
+
+    updateQRInfo();
+
+    document
+        .getElementById("editor")
+        .classList
+        .remove("hidden");
+
+}
+
+
+/* ==================================================
+   QR INFO
+================================================== */
+
+function updateQRInfo() {
+
+    const qr =
+        document.getElementById("qr").value;
+
+    const info =
+        document.getElementById("qrInfo");
+
+    if (qr) {
+
+        info.classList.remove("hidden");
+
+        info.innerHTML =
+            "<strong>📷 QR :</strong><br>" +
+            escapeHTML(qr);
+
+    } else {
+
+        info.classList.add("hidden");
+
+    }
+
+}
+
+
+document
+    .getElementById("qr")
+    .addEventListener(
+        "input",
+        updateQRInfo
+    );
+
+
+/* ==================================================
+   ENREGISTRER
+================================================== */
+
+function saveQuestion() {
+
+    const data = {
+
+        id:
+            document.getElementById("id").value.trim(),
+
+        qr:
+            document.getElementById("qr").value.trim(),
+
+        name:
+            document.getElementById("name").value.trim(),
+
+        description:
+            document.getElementById("description").value.trim(),
+
+        question:
+            document.getElementById("question").value.trim(),
+
+        type:
+            document.getElementById("type").value,
+
+        answer:
+            document.getElementById("answer").value.trim(),
+
+        points:
+            Number(
+                document.getElementById("points").value
+            ) || 0,
+
+        latitude:
+            Number(
+                document.getElementById("latitude").value
+            ) || 0,
+
+        longitude:
+            Number(
+                document.getElementById("longitude").value
+            ) || 0,
+
+        next:
+            document.getElementById("next").value.trim(),
+
+        active:
+            document.getElementById("active").checked
+
+    };
+
+
+    if (!data.id) {
+
+        alert("⚠️ Indique un ID.");
+
+        return;
+
+    }
+
+    if (!data.qr) {
+
+        alert("⚠️ Indique le QR code.");
+
+        return;
+
+    }
+
+
+    if (editingId) {
+
+        const index =
+            questions.findIndex(
+                q => q.id === editingId
+            );
+
+        if (index !== -1) {
+
+            questions[index] = data;
+
+        }
+
+    } else {
+
+        const sameId =
+            questions.some(
+                q => q.id === data.id
+            );
+
+        if (sameId) {
+
+            alert("❌ Cet ID existe déjà.");
+
+            return;
+
+        }
+
+
+        const sameQR =
+            questions.findIndex(
+                q => q.qr === data.qr
+            );
+
+        if (sameQR !== -1) {
+
+            if (
+                !confirm(
+                    "Ce QR existe déjà.\n\nRemplacer cette étape ?"
+                )
+            ) {
+
+                return;
+
+            }
+
+            questions[sameQR] = data;
+
+        } else {
+
+            questions.push(data);
+
+        }
+
+    }
+
+
+    saveDatabase();
+
+    alert("✅ Étape enregistrée !");
+
+    showQuestions();
+
+}
+
+
+/* ==================================================
+   ANNULER
+================================================== */
+
+function cancelEditor() {
+
+    backToAdmin();
+
+}
+
+
+/* ==================================================
+   LISTE
+================================================== */
+
+function showQuestions() {
+
+    hideAll();
+
+    document
+        .getElementById("questionsPage")
+        .classList
+        .remove("hidden");
+
+    const list =
+        document.getElementById("questionsList");
+
+    if (questions.length === 0) {
+
+        list.innerHTML =
+            "<p>Aucune étape.</p>";
+
+        return;
+
+    }
+
+    list.innerHTML = "";
+
+    questions.forEach(q => {
+
+        const div =
+            document.createElement("div");
+
+        div.className =
+            "admin-item";
+
+        div.innerHTML = `
+
+            <strong>
+                ${escapeHTML(q.name || q.id)}
+            </strong>
+
+            <p class="small">
+                ID : ${escapeHTML(q.id)}
+            </p>
+
+            <p class="small">
+                QR : ${escapeHTML(q.qr)}
+            </p>
+
+            <p>
+                ${escapeHTML(q.question || "Aucune question")}
+            </p>
+
+            <p>
+                ⭐ ${q.points} points
+            </p>
+
+            <p>
+                ${q.active ? "🟢 Active" : "🔴 Désactivée"}
+            </p>
+
+            <button
+                onclick="editQuestion('${escapeAttribute(q.id)}')"
+            >
+                ✏️ Modifier
+            </button>
+
+            <button
+                class="danger"
+                onclick="deleteQuestion('${escapeAttribute(q.id)}')"
+            >
+                🗑️ Supprimer
+            </button>
+
+        `;
+
+        list.appendChild(div);
+
+    });
+
+}
+
+
+/* ==================================================
+   SUPPRIMER
+================================================== */
+
+function deleteQuestion(id) {
+
+    if (
+        !confirm(
+            "Supprimer cette étape ?"
+        )
+    ) {
+
+        return;
+
+    }
+
+    questions =
+        questions.filter(
+            q => q.id !== id
+        );
+
+    saveDatabase();
+
+    showQuestions();
+
+}
+
+
+/* ==================================================
+   SCANNER JOUEUR
+================================================== */
+
+function startPlayerScanner() {
+
+    stopPlayerScanner();
+
+    document.getElementById("game").innerHTML = "";
+
+    playerScanner =
+        new Html5Qrcode("playerReader");
+
+    playerScanner.start(
+
+        {
+            facingMode: "environment"
+        },
+
+        {
+            fps: 10,
+
+            qrbox: {
+                width: 250,
+                height: 250
+            }
+
+        },
+
+        function(decodedText) {
+
+            playerQRFound(decodedText);
+
+        },
+
+        function() {}
+
+    ).catch(function() {
+
+        document.getElementById("game").innerHTML =
+            "<p class='error'>❌ Caméra inaccessible.</p>";
+
+    });
+
+}
+
+
+function stopPlayerScanner() {
+
+    if (playerScanner) {
+
+        playerScanner
+            .stop()
+            .catch(() => {});
+
+        playerScanner = null;
+
+    }
+
+}
+
+
+/* ==================================================
+   QR JOUEUR
+================================================== */
+
+function playerQRFound(code) {
+
+    stopPlayerScanner();
+
+    const q =
+        questions.find(
+            item =>
+                item.qr === code &&
+                item.active !== false
+        );
+
+    if (!q) {
+
+        document.getElementById("game").innerHTML = `
+
+            <div class="qr-info">
+
+                <p class="error">
+                    ❌ QR code inconnu.
+                </p>
+
+                <p>
+                    ${escapeHTML(code)}
+                </p>
+
+                <button onclick="startPlayerScanner()">
+                    📷 Scanner un autre QR
+                </button>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    showGameQuestion(q);
+
+}
+
+
+/* ==================================================
+   QUESTION JOUEUR
+================================================== */
+
+function showGameQuestion(q) {
+
+    const game =
+        document.getElementById("game");
+
+    if (q.type === "info") {
+
+        game.innerHTML = `
+
+            <div class="card">
+
+                <h2>
+                    ${escapeHTML(q.name)}
+                </h2>
+
+                <p>
+                    ${escapeHTML(q.description)}
+                </p>
+
+                <p>
+                    ${escapeHTML(q.question)}
+                </p>
+
+                <button onclick="nextStep('${escapeAttribute(q.next || "")}')">
+                    ➡️ Continuer
+                </button>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    if (q.type === "creative") {
+
+        game.innerHTML = `
+
+            <div class="card">
+
+                <h2>
+                    ${escapeHTML(q.name)}
+                </h2>
+
+                <p>
+                    ${escapeHTML(q.description)}
+                </p>
+
+                <div class="question">
+                    ${escapeHTML(q.question)}
+                </div>
+
+                <textarea
+                    id="creativeAnswer"
+                    rows="4"
+                    placeholder="Écris ta réponse..."
+                ></textarea>
+
+                <button
+                    onclick="validateCreative('${escapeAttribute(q.id)}')"
+                >
+                    ✅ Valider
+                </button>
+
+                <div id="feedback"></div>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    game.innerHTML = `
+
+        <div class="card">
+
+            <h2>
+                ${escapeHTML(q.name)}
+            </h2>
+
+            <p>
+                ${escapeHTML(q.description)}
+            </p>
+
+            <div class="question">
+                ${escapeHTML(q.question)}
+            </div>
+
+            <input
+                id="textAnswer"
+                placeholder="Ta réponse..."
+            >
+
+            <button
+                onclick="validateText('${escapeAttribute(q.id)}')"
+            >
+                ✅ Valider
+            </button>
+
+            <div id="feedback"></div>
+
+        </div>
+
+    `;
+
+}
+
+
+/* ==================================================
+   QUESTION CRÉATIVE
+================================================== */
+
+function validateCreative(id) {
+
+    const q =
+        questions.find(
+            item => item.id === id
+        );
+
+    if (!q) return;
+
+    const answer =
+        document.getElementById(
+            "creativeAnswer"
+        ).value.trim();
+
+    if (!answer) {
+
+        alert("Écris une réponse.");
+
+        return;
+
+    }
+
+
+    score += q.points;
+
+    document.getElementById("score").textContent =
+        score;
+
+    document.getElementById("feedback").innerHTML = `
+
+        <p class="success">
+            🎉 Réponse enregistrée !
+            +${q.points} points
+        </p>
+
+        <button
+            onclick="nextStep('${escapeAttribute(q.next || "")}')"
+        >
+            ➡️ Étape suivante
+        </button>
+
+    `;
+
+}
+
+
+/* ==================================================
+   RÉPONSE TEXTE
+================================================== */
+
+function validateText(id) {
+
+    const q =
+        questions.find(
+            item => item.id === id
+        );
+
+    if (!q) return;
+
+    const answer =
+        document
+            .getElementById("textAnswer")
+            .value
+            .trim()
+            .toLowerCase();
+
+    const expected =
+        String(q.answer || "")
+            .trim()
+            .toLowerCase();
+
+    if (
+        answer === expected &&
+        expected !== ""
+    ) {
+
+        score += q.points;
+
+        document.getElementById("score").textContent =
+            score;
+
+        document.getElementById("feedback").innerHTML = `
+
+            <p class="success">
+                🎉 Bonne réponse !
+                +${q.points} points
+            </p>
+
+            <button
+                onclick="nextStep('${escapeAttribute(q.next || "")}')"
+            >
+                ➡️ Étape suivante
+            </button>
+
+        `;
+
+    } else {
+
+        document.getElementById("feedback").innerHTML = `
+
+            <p class="error">
+                ❌ Mauvaise réponse.
+            </p>
+
+            <button onclick="startPlayerScanner()">
+                📷 Scanner un autre QR
+            </button>
+
+        `;
+
+    }
+
+}
+
+
+/* ==================================================
+   ÉTAPE SUIVANTE
+================================================== */
+
+function nextStep(nextId) {
+
+    if (!nextId) {
+
+        document.getElementById("game").innerHTML = `
+
+            <div class="card">
+
+                <h2>🎉 Bravo !</h2>
+
+                <p>
+                    Tu as terminé le parcours.
+                </p>
+
+                <p class="score">
+                    ⭐ ${score} points
+                </p>
+
+                <button onclick="startPlayerScanner()">
+                    📷 Recommencer
+                </button>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    const q =
+        questions.find(
+            item => item.id === nextId
+        );
+
+    if (!q) {
+
+        alert(
+            "L'étape suivante n'existe pas : " +
+            nextId
+        );
+
+        return;
+
+    }
+
+    showGameQuestion(q);
+
+}
+
+
+/* ==================================================
+   EXPORT
+================================================== */
+
+function exportData() {
+
+    const data =
+        JSON.stringify(
+            questions,
+            null,
+            2
+        );
+
+    const blob =
+        new Blob(
+            [data],
+            {
+                type: "application/json"
+            }
+        );
+
+    const url =
+        URL.createObjectURL(blob);
+
+    const link =
+        document.createElement("a");
+
+    link.href = url;
+
+    link.download =
+        "nature-questions.json";
+
+    link.click();
+
+    URL.revokeObjectURL(url);
+
+}
+
+
+/* ==================================================
+   IMPORT
+================================================== */
+
+function importData(event) {
+
+    const file =
+        event.target.files[0];
+
+    if (!file) return;
+
+    const reader =
+        new FileReader();
+
+    reader.onload = function(e) {
+
+        try {
+
+            const imported =
+                JSON.parse(
+                    e.target.result
+                );
+
+            if (!Array.isArray(imported)) {
+
+                throw new Error();
+
+            }
+
+            questions = imported;
+
+            saveDatabase();
+
+            alert(
+                "✅ Données importées !"
+            );
+
+            showQuestions();
+
+        } catch {
+
+            alert(
+                "❌ Fichier JSON invalide."
+            );
+
+        }
+
+    };
+
+    reader.readAsText(file);
+
+}
+
+
+/* ==================================================
+   SÉCURITÉ
+================================================== */
+
+function escapeHTML(text) {
+
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+
+function escapeAttribute(text) {
+
+    return String(text)
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'");
+
+}
+
+</script>
+
+</body>
+</html>
